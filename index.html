@@ -1,9 +1,10 @@
 
 <!-- 
-  index.html
   Restringir chave de api
   Personalizar a tela de permissão OAuth
-  Origens JavaScript autorizadas no ID do cliente do OAuth
+  
+  CLIENT_ID e API_KEY devem ser privadas
+  
  -->
 
 <!DOCTYPE html>
@@ -15,7 +16,7 @@
   <body>
     <p>Google Calendar API Quickstart</p>
 
-    <!--Add buttons to initiate auth sequence and sign out-->
+    <!--Add buttons to initiate auth sequence and sign -->
     <button id="authorize_button" onclick="handleAuthClick()">Authorize</button>
     <button id="signout_button" onclick="handleSignoutClick()">Sign Out</button>
 
@@ -27,15 +28,15 @@
       /* exported handleAuthClick */
       /* exported handleSignoutClick */
 
-      const CLIENT_ID = '835802431834-kbd98p5r7bd28uajbondol3up4b673sm.apps.googleusercontent.com';
-      const API_KEY = 'AIzaSyA_LT1DlQ_iArm1fGqxIK-YpjAOUSoZgZo';
+      const CLIENT_ID = process.env.CLIENT_ID;
+      const API_KEY = process.env.API_KEY;
 
       // Discovery doc URL for APIs used by the quickstart
       const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
 
       // Authorization scopes required by the API; multiple scopes can be
       // included, separated by spaces.
-      const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly';
+      const SCOPES = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
       let tokenClient;
       let gapiInited = false;
