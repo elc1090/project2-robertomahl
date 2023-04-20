@@ -1,10 +1,7 @@
 
 <!-- 
   Restringir chave de api
-  Personalizar a tela de permissão OAuth
-  
-  CLIENT_ID e API_KEY devem ser privadas
-  
+  Personalizar a tela de permissão OAuth  
  -->
 
 <!DOCTYPE html>
@@ -28,8 +25,9 @@
       /* exported handleAuthClick */
       /* exported handleSignoutClick */
 
-      const CLIENT_ID = window._env.CLIENT_ID;
-      const API_KEY = window._env.API_KEY;
+      // Do not need to be protected. Restrictions were made in Google API config to allow requests from my domain only
+      const CLIENT_ID = '835802431834-kbd98p5r7bd28uajbondol3up4b673sm.apps.googleusercontent.com';
+      const API_KEY = 'AIzaSyA_LT1DlQ_iArm1fGqxIK-YpjAOUSoZgZo';
 
       // Discovery doc URL for APIs used by the quickstart
       const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
