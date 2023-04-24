@@ -3,8 +3,10 @@
 /* exported handleAuthClick */
 /* exported handleSignoutClick */
 
-// Do not need to be protected. Restrictions were made in Google API config to allow requests from my domain only
+// Both below do not need to be protected. Restrictions were made in Google API config to allow requests from my domain only
+// Used for authenticating users
 const CLIENT_ID = '835802431834-kbd98p5r7bd28uajbondol3up4b673sm.apps.googleusercontent.com';
+// Used for identifying the API that is requesting public Google resources
 const API_KEY = 'AIzaSyA_LT1DlQ_iArm1fGqxIK-YpjAOUSoZgZo';
 
 // Discovery doc URL for APIs used by the quickstart
@@ -48,7 +50,7 @@ function gisLoaded() {
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
-        callback: '', // defined later
+        callback: '',
     });
     gisInited = true;
     maybeEnableButtons();
@@ -72,7 +74,6 @@ function handleAuthClick() {
             throw (resp);
         }
         document.getElementById('signout_button').style.visibility = 'visible';
-        document.getElementById('authorize_button').innerText = 'Refresh';
         await insertEvent();
     };
 
@@ -95,79 +96,40 @@ function handleSignoutClick() {
         google.accounts.oauth2.revoke(token.access_token);
         gapi.client.setToken('');
         document.getElementById('content').innerText = '';
-        document.getElementById('authorize_button').innerText = 'Authorize';
         document.getElementById('signout_button').style.visibility = 'hidden';
     }
 }
 
 /**
- * Print the summary and start datetime/date of the next ten events in
- * the authorized user's calendar. If no events are found an
- * appropriate message is printed.
+ *   Converts a datetimeLocal value to RFC3339 format timestamp, required by Google.
+ *   Consider that toISOString converts the datetimeLocal's timezone to ISO.
  */
-async function listUpcomingEvents() {
-    let response;
-    try {
-        const request = {
-            'calendarId': 'primary',
-            'timeMin': (new Date()).toISOString(),
-            'showDeleted': false,
-            'singleEvents': true,
-            'maxResults': 10,
-            'orderBy': 'startTime',
-        };
-        response = await gapi.client.calendar.events.list(request);
-    } catch (err) {
-        document.getElementById('content').innerText = err.message;
-        return;
-    }
-
-    const events = response.result.items;
-    if (!events || events.length == 0) {
-        document.getElementById('content').innerText = 'No events found.';
-        return;
-    }
-    // Flatten to string to display
-    const output = events.reduce(
-        (str, event) => `${str}${event.summary} (${event.start.dateTime || event.start.date})\n`,
-        'Events:\n');
-    document.getElementById('content').innerText = output;
+function getRFC3339(datetimeLocal) {
+    const date = new Date(datetimeLocal);
+    const rfc3339 = date.toISOString();
+    const rfc3339WithoutZ = rfc3339.replace("Z", "");
+    return rfc3339WithoutZ;
 }
 
 /**
- * Print the summary and start datetime/date of the next ten events in
- * the authorized user's calendar. If no events are found an
- * appropriate message is printed.
+ *   Submits the form data and creates the event in Google Calendar.
  */
 async function insertEvent() {
-    let response;
+    let form = document.getElementById('eventForm');
+
     try {
         const event = {
-            'summary': 'Google I/O 2015',
-            'location': '800 Howard St., San Francisco, CA 94103',
-            'description': 'A chance to hear more about Google\'s developer products.',
+            'summary': form.elements['summary'].value,
+            'location': form.elements['location'].value,
+            'description': form.elements['description'].value,
             'start': {
-                'dateTime': '2015-05-28T09:00:00-07:00',
-                'timeZone': 'America/Los_Angeles'
+                'dateTime': getRFC3339(form.elements['startDateTime'].value),
+                'timeZone': 'UTC'
             },
             'end': {
-                'dateTime': '2015-05-28T17:00:00-07:00',
-                'timeZone': 'America/Los_Angeles'
+                'dateTime': form.elements['endDateTime'].value,
+                'timeZone': 'UTC'
             },
-            'recurrence': [
-                'RRULE:FREQ=DAILY;COUNT=2'
-            ],
-            'attendees': [
-                { 'email': 'lpage@example.com' },
-                { 'email': 'sbrin@example.com' }
-            ],
-            'reminders': {
-                'useDefault': false,
-                'overrides': [
-                    { 'method': 'email', 'minutes': 24 * 60 },
-                    { 'method': 'popup', 'minutes': 10 }
-                ]
-            }
         };
 
         var request = gapi.client.calendar.events.insert({
@@ -176,11 +138,13 @@ async function insertEvent() {
         });
 
         request.execute(function (event) {
-            document.getElementById('content').innerText = 'Event created: ' + event.htmlLink;
+            if (event.htmlLink)
+                document.getElementById('content').innerText = 'Evento criado com sucesso: ' + event.htmlLink;
+            else
+                document.getElementById('content').innerText = 'Erro. Código: ' + event.code + ' Mensagem: ' + event.message;
         });
 
     } catch (err) {
         document.getElementById('content').innerText = err.message;
-        return;
     }
 }
