@@ -127,7 +127,7 @@ async function insertEvent() {
                 'timeZone': 'UTC'
             },
             'end': {
-                'dateTime': form.elements['endDateTime'].value,
+                'dateTime': getRFC3339(form.elements['endDateTime'].value),
                 'timeZone': 'UTC'
             },
         };
