@@ -320,14 +320,50 @@ async function createSpreadsheet(spreadsheetName) {
     }
 }
 
-//TODO: to be called upon page load
+/**
+ *   Load the spreadsheet ID from a cookie when the page loads
+ */
 function loadSpreadsheetId() {
-    //TODO: set cookie value in the field
+    let spreadsheetId = getCookie("spreadsheetId");
+    if (spreadsheetId) {
+        document.getElementById('eventForm').elements['spreadsheetId'].value = spreadsheetId;
+    }
 }
 
-function storeSpreadsheetId(id) {
-    document.getElementById('eventForm').elements['spreadsheetId'].value = id;
-    //TODO: store in cookies
+/**
+ *   Store the spreadsheet ID in a cookie when it is created  
+ */
+function storeSpreadsheetId(spreadsheetId) {
+    setCookie("spreadsheetId", spreadsheetId, 365);
+    
+    document.getElementById('eventForm').elements['spreadsheetId'].value = spreadsheetId;
+}
+
+/**
+ *  Helper function to set a cookie 
+ */
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        let date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+/**
+ *   Helper function to get a cookie value by name
+ */
+function getCookie(name) {
+    let nameEQ = name + "=";
+    let ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
 }
 
 /**
