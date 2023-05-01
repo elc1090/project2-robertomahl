@@ -133,13 +133,13 @@ async function insertEvent() {
 
         request.execute(function (event) {
             if (event.htmlLink) {
-                addTextMessage('Evento criado com sucesso: <a href="' + event.htmlLink + '" target="_blank">Ver na agenda</a>');
+                addTextMessage('Evento criado com sucesso: <a href="' + event.htmlLink + '" target="_blank">Ver na agenda</a>', 'success');
             } else {
-                addTextMessage('Erro na inserção de evento. Código: ' + event.code + '. Mensagem: ' + event.message);
+                addTextMessage('Erro na inserção de evento. Código: ' + event.code + '. Mensagem: ' + event.message, 'danger');
             }
         });
     } catch (err) {
-        addTextMessage('Erro na inserção de evento. Mensagem: ' + err.message);
+        addTextMessage('Erro na inserção de evento. Mensagem: ' + err.message, 'danger');
     }
 }
 
@@ -164,15 +164,16 @@ async function insertExpenseRecord() {
     }
 
     let endDateTime = form.elements['endDateTime'].value;
-    if (! await correspondentSheetExists(endDateTime)) {
-        await createSheet(spreadsheetId, endDateTime);
+    let sheetId = getNumericYearMonth(endDateTime);
+    if (await sheetExists(spreadsheetId, sheetId) === false) {
+        await createSheet(spreadsheetId, sheetId, getTextualYearMonth(endDateTime));
     }
 
     var batchUpdateSpreadsheetRequestBody = {
         'requests': [
             {
                 'appendCells': {
-                    'sheetId': getYearMonthAsId(endDateTime),
+                    'sheetId': sheetId,
                     'fields': '*',
                     'rows': [
                         {
@@ -199,33 +200,83 @@ async function insertExpenseRecord() {
             }
         ]
     };
-
+    addTextMessage('Adicionando novo registro na página.', 'warning');
     await batchUpdateSpreadsheet(spreadsheetId, batchUpdateSpreadsheetRequestBody);
 }
 
-async function correspondentSheetExists(endDateTime) {
+/**
+ *   Returns true if there is a sheet with the specified sheetId in the spreadsheet.
+ *   Otherwise, returns false.
+ */
+async function sheetExists(spreadsheetId, sheetId) {
+    var params = {
+        'spreadsheetId': spreadsheetId,
+        'includeGridData': false,
+    };
+
+    try {
+        const response = await gapi.client.sheets.spreadsheets.get(params);
+
+        return response.result.sheets.find(sheet => sheet.properties.sheetId === sheetId) != undefined;
+    } catch (err) {
+        addTextMessage('Erro na obtenção da tabela. Código: ' + err.result.error.code + '. Mensagem: ' + err.result.error.message, 'danger');
+    }
     return false;
 }
 
-async function createSheet(spreadsheetId, datetimeLocal) {
+/**
+ *   Creates a sheet with specified ID and title in the spreadsheet
+ *   with the given ID. Also inputs the first row as a header.
+ */
+async function createSheet(spreadsheetId, sheetId, sheetTitle) {
 
     var batchUpdateSpreadsheetRequestBody = {
         'requests': [
             {
                 'addSheet': {
                     'properties': {
-                        'sheetId': getYearMonthAsId(datetimeLocal),
-                        'title': getYearMonthAsName(datetimeLocal)
+                        'sheetId': sheetId,
+                        'title': sheetTitle
                     }
+                }
+            },
+            {
+                'appendCells': {
+                    'sheetId': sheetId,
+                    'fields': '*',
+                    'rows': [
+                        {
+                            'values': [
+                                {
+                                    'userEnteredValue': {
+                                        'stringValue': 'Data'
+                                    }
+                                },
+                                {
+                                    'userEnteredValue': {
+                                        'stringValue': 'Valor'
+                                    }
+                                },
+                                {
+                                    'userEnteredValue': {
+                                        'stringValue': 'Motivo'
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 }
             }
         ]
     };
-
+    addTextMessage('Criando nova página.', 'warning');
     await batchUpdateSpreadsheet(spreadsheetId, batchUpdateSpreadsheetRequestBody);
 }
 
-//TODO: think about making the call synchronous
+/**
+ *   Executes a batchUpdate with the given body in the desired spreadsheet. There can
+ *   be multiple requests within the request body.
+ */
 async function batchUpdateSpreadsheet(spreadsheetId, batchUpdateSpreadsheetRequestBody) {
 
     var params = { 'spreadsheetId': spreadsheetId };
@@ -234,10 +285,34 @@ async function batchUpdateSpreadsheet(spreadsheetId, batchUpdateSpreadsheetReque
         // A list of updates to apply to the spreadsheet.
         // Requests will be applied in the order they are specified.
         // If any request is not valid, no requests will be applied.
-        var response = await gapi.client.sheets.spreadsheets.batchUpdate(params, batchUpdateSpreadsheetRequestBody);
-        addTextMessage('Atualização da tabela efetuada com sucesso.');
+        await gapi.client.sheets.spreadsheets.batchUpdate(params, batchUpdateSpreadsheetRequestBody);
+        addTextMessage('Atualização da página efetuada com sucesso.', 'success');
     } catch (err) {
-        addTextMessage('Erro na atualização da tabela. Código: ' + err.result.error.code + '. Mensagem: ' + err.result.error.message);
+        addTextMessage('Erro na atualização da tabela. Código: ' + err.result.error.code + '. Mensagem: ' + err.result.error.message, 'danger');
+    }
+}
+
+/**
+ *   Creates a spreadsheet in the user's Drive account with standardized name.
+ *   Its ID is returned upon successful creation. If an error occurs, return ''.
+ */
+async function createSpreadsheet(spreadsheetName) {
+    try {
+        const response = await gapi.client.sheets.spreadsheets.create({
+            properties: {
+                title: spreadsheetName,
+            },
+        });
+        const spreadsheetId = response.result.spreadsheetId;
+        const spreadsheetUrl = response.result.spreadsheetUrl;
+
+        storeSpreadsheetId(spreadsheetId);
+
+        addTextMessage('Tabela criada com successo. ID: ' + spreadsheetId + '. <a href="' + spreadsheetUrl + '" target="_blank">Ver no sheets</a>', 'success');
+        return spreadsheetId;
+    } catch (err) {
+        addTextMessage('Erro na criação da tabela. Mensagem: ' + err.message, 'danger')
+        return '';
     }
 }
 
@@ -252,6 +327,30 @@ function storeSpreadsheetId(id) {
 }
 
 /**
+ *   Converts a datetimeLocal value to the format AAAAMM 
+ *   and parses the result to an integer value.
+ */
+function getNumericYearMonth(datetimeLocal) {
+    const date = new Date(datetimeLocal);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // Add 1 to adjust for 0-based indexing
+    const yearMonth = `${year}${month < 10 ? '0' : ''}${month}`; // Pad month with leading zero if necessary
+    return parseInt(yearMonth);
+}
+
+/**
+ *   Converts a datetimeLocal value to the format AAAA-MM 
+ *   and returns the new value as a string.
+ */
+function getTextualYearMonth(datetimeLocal) {
+    const date = new Date(datetimeLocal);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // Add 1 to adjust for 0-based indexing
+    const yearMonth = `${year}${'-'}${month < 10 ? '0' : ''}${month}`; // Pad month with leading zero if necessary
+    return yearMonth;
+}
+
+/**
  *   Converts a datetimeLocal value to RFC3339 format timestamp, required by Google.
  *   Consider that toISOString converts the datetimeLocal's timezone to ISO.
  */
@@ -262,45 +361,10 @@ function getRFC3339(datetimeLocal) {
     return rfc3339WithoutZ;
 }
 
-function getYearMonthAsId(datetimeLocal) {
-    const date = new Date(datetimeLocal);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1; // Add 1 to adjust for 0-based indexing
-    const yearMonth = `${year}${month}`;
-    return parseInt(yearMonth);
+function addTextMessage(content, type) {
+    document.getElementById('content').insertAdjacentHTML('beforeend', wrapTextMessageInAlert(content, type));
 }
 
-function getYearMonthAsName(datetimeLocal) {
-    const date = new Date(datetimeLocal);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1; // Add 1 to adjust for 0-based indexing
-    const yearMonth = `${year}${'-'}${month < 10 ? '0' : ''}${month}`; // pad month with leading zero if necessary
-    return yearMonth;
-}
-
-async function createSpreadsheet(spreadsheetName) {
-    try {
-        const response = await gapi.client.sheets.spreadsheets.create({
-            properties: {
-                title: spreadsheetName,
-            },
-        });
-        const spreadsheetId = response.result.spreadsheetId;
-
-        storeSpreadsheetId(spreadsheetId);
-
-        addTextMessage('Spreadsheet criada com successo. ID: ' + spreadsheetId);
-        return spreadsheetId;
-    } catch (err) {
-        addTextMessage('Erro na criação da spreadsheet. Mensagem: ' + err.message)
-        return '';
-    }
-}
-
-function addTextMessage(content) {
-    document.getElementById('content').insertAdjacentHTML('beforeend', wrapContentInParagraph(content));
-}
-
-function wrapContentInParagraph(content) {
-    return "<p>" + content + "</p>"
+function wrapTextMessageInAlert(content, type) {
+    return '<div class="alert alert-' + type + '" role="alert"> ' + content + '</div>';
 }
