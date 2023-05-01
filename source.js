@@ -104,7 +104,6 @@ function handleSignoutClick() {
     }
 }
 
-
 /**
  *   Submits the form data and creates the event in Google Calendar.
  */
@@ -139,10 +138,15 @@ async function insertEvent() {
             }
         });
     } catch (err) {
-        addTextMessage('Erro na inserção de evento. Mensagem: ' + err.message, 'danger');
+        addTextMessage('Erro na inserção de evento. Código: ' + err.result.error.code + '. Mensagem: ' + err.result.error.message, 'danger');
     }
 }
 
+/**
+ *  If a cost is informed in the form, tries to input a new row in the expenses table.
+ *  In case there isn't a page in the table for the month in which the expense ended,
+ *  creates one.
+ */
 async function insertExpenseRecord() {
     let form = document.getElementById('eventForm');
 
