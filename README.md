@@ -1,9 +1,7 @@
 # Criador de eventos do Google Agenda com registro de gastos no Google Sheets
 
-TODO: imagem
-<!-- ![Hero Screenshot](assets/img/screenshots/screenshot-1.png "Hero Screenshot"). -->
-<!-- ![About Screenshot](assets/img/screenshots/screenshot-3.png "About Screenshot"). -->
-<!-- ![Portfolio Screenshot](assets/img/screenshots/screenshot-2.png "Portfolio Screenshot"). -->
+![OAuth](assets/img/screenshots/OAuth.png "OAuth Screenshot")
+![Page](assets/img/screenshots/Page.png "Page Screenshot")
 
 Acesso: [https://elc1090.github.io/project2-robertomahl/](https://elc1090.github.io/project2-robertomahl/)
 
