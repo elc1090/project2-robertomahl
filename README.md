@@ -42,10 +42,11 @@ Lidar com a API do Google Sheets foi um pouco mais complicado, entretanto. Ela e
 Em adição, nunca havia utilizado cookies e mal conhecia seu funcionamento, que vejo agora ser muito básico. Descobri, entretanto, que seriam necessárias algumas adequações à LGPD para que meu uso deles estivesse mais correto (e legal).
 
 A publicação do aplicativo no Google Cloud foi, enfim, feita. Atualmente, ele possui limite de 100 contas por não estar verificado pelo Google. Para que isso ocorresse, eu precisaria de:
-1. Um link oficial para a Política de Privacidade do seu aplicativo;
-2. Um vídeo do YouTube mostrando como você planeja usar os dados do usuário do Google que obtiver dos escopos;
-3. Uma explicação por escrito ao Google sobre por que você precisa acessar dados do usuário restritos e/ou confidenciais;
-4. Todos os seus domínios verificados no Google Search Console.
+
+> 1. Um link oficial para a Política de Privacidade do seu aplicativo;
+> 2. Um vídeo do YouTube mostrando como você planeja usar os dados do usuário do Google que obtiver dos escopos;
+> 3. Uma explicação por escrito ao Google sobre por que você precisa acessar dados do usuário restritos e/ou confidenciais;
+> 4. Todos os seus domínios verificados no Google Search Console.
 
 Assim, optei por manter o aviso de inseguro e o limite de 100 contas, que espero que não seja ultrapassado até minha apresentação.
 
